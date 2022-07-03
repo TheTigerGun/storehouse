@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="description" content="">
+	<meta name="author" content="xuejianxinokok">
+	<title>设备状态</title>
+	<link rel="stylesheet" href="./resources/css/bootstrap.min.css" />
+	<link rel="stylesheet" href="./resources/css/dashboard.css" />
+	<meta name="theme-color" content="#7952b3">
+	<style>
+		.gitcol {
+			box-sizing: inherit;
+			border: 1px solid;
+			margin: 1px 1px 1px 1px;
+			cursor: pointer;
+			width: 15px;
+			height: 15px;
+			display: inline-block;
+			vertical-align: middle;
+			line-height: 1em;
+			text-align: center;
+			border-color: #ccc;
+		}
+
+		.gitrow {
+			line-height: 1em;
+		}
+
+		.gitcolgreen {
+			background: green;
+		}
+
+		.gitcol:hover {
+			border: 2px solid #0dcaf0;
+		}
+
+		.gittext {
+			font-size: 0.5em;
+			width: 30px;
+			width: 2em;
+			display: inline-block;
+			line-height: 1em !important;
+		}
+	</style>
+</head>
+
+
+<body>
+	<main class="container " id="app">
+		<div class="row">
+			<div class="col-2  border bg-light fw-bold">名称：</div>
+			<div class="col-4  border border-start-0">{{vo.name}} 【{{mid}}】</div>
+			<div class="col-2  border border-start-0 bg-light fw-bold">在线时长：</div>
+			<div class="col-4  border border-start-0">{{vo.minutes}}分钟</div>
+		</div>
+
+		<div class="row">
+			<div class="col-2  border border-top-0 bg-light fw-bold">最后更新时间：</div>
+			<div class="col-4  border border-top-0 border-start-0">{{vo.update_time}}</div>
+			<div class="col-2  border border-top-0 border-start-0 bg-light fw-bold">日期： </div>
+			<div class="col-4  border border-top-0 border-start-0">
+				<input type="date" v-model="selectDate" style="height: 1.5em;" />
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-2  border border-top-0 bg-light fw-bold">CPU：</div>
+			<div class="col-4  border border-top-0 border-start-0">
+				<span v-if="vo.sysInfo&&vo.sysInfo.cpu">cores: {{vo.sysInfo.cpu.cores}}</span>
+			</div>
+			<div class="col-2  border border-top-0 border-start-0 bg-light fw-bold">MEMORY:</div>
+			<div class="col-4  border border-top-0 border-start-0">
+				<span v-if="vo.sysInfo&&vo.sysInfo.memory">
+					total: {{vo.sysInfo.memory.total}} &nbsp;
+					free:{{vo.sysInfo.memory.free}}
+				</span>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-2  border border-top-0 bg-light fw-bold">DISK：</div>
+			<div class="col-10  border border-top-0 border-start-0">
+				<ol class="list-group list-group-numbered list-group-flush" v-if="vo.sysInfo&&vo.sysInfo.disk">
+					<li class="list-group-item" v-for="d in vo.sysInfo.disk">
+						&nbsp; path: {{d.path}} , size: {{d.size}}, used: {{d.used}}, avail: {{d.avail}}, use: {{d.use}}
+					</li>
+				</ol>
+			</div>
+		</div>
+
+
+
+		<div class="row">
+			<div class="col-12 border border-top-0">
+				<span class="gittext">
+				</span>
+				<span class="gitcol" v-for="col in 60" style="border: none;font-size: 0.5em;">
+					{{((col-1)%5==0 || col==60) ?(col-1):''}}
+				</span>
+				<div class="gitrow" v-for="row in 24">
+					<span class="gittext">{{row-1}}</span>
+					<span class="gitcol" v-for="col in 60" :class="{ gitcolgreen: hasBit(row-1,col-1) }"
+						:title="((row-1)+'').padStart(2,'0')+':'+((col-1)+'').padStart(2,'0')">
+						&nbsp;
+					</span>
+				</div><!-- 一行 -->
+				<br />
+			</div>
+		</div>
+	</main>
+	<script src="./resources/js/http.js"></script>
+	<script src="./resources/js/vue.global.prod.js"></script>
+	<script src="./resources/js/bootstrap.bundle.min.js"></script>
+	<script src="./resources/js/feather.min.js"></script>
+	<script>
+		/*渲染图标  feather:false */
+		(function () {
+			'use strict'
+			feather.replace({ 'aria-hidden': 'true' })
+		})()
+
+		function getParameters() {
+			var qs = location.search.substr(1), // 获取url中"?"符后的字串  
+				args = {}, // 保存参数数据的对象
+				items = qs.length ? qs.split("&") : [], // 取得每一个参数项,
+				item = null,
+				len = items.length;
+
+			for (var i = 0; i < len; i++) {
+				item = items[i].split("=");
+				var name = decodeURIComponent(item[0]),
+					value = decodeURIComponent(item[1]);
+				if (name) {
+					args[name] = value;
+				}
+			}
+			return args;
+		}
+
+		function getBitArrary(hexStr) {
+			const debug = false
+			const bitArr = []
+			const hexMap = ['0000', '0001', '0010', '0011', '0100', '0101', '0110', '0111', '1000', '1001', '1010', '1011', '1100', '1101', '1110', '1111']
+			for (const c of hexStr) {
+				const i = parseInt(c, 16)
+				if (debug) {
+					console.log(c, ',', i, ',', hexMap[i])
+				}
+				bitArr.push(hexMap[i])
+			}
+			const allStr = bitArr.join('')
+			if (debug) {
+				console.log(allStr)
+			}
+			return allStr
+		}
+
+
+		let ps = getParameters();
+		Vue.createApp({
+			data() {
+				return {
+					msg: '消息'
+					, vo: {}
+					, mid: ps['mid']
+					, selectDate: null
+				}
+			},
+
+			mounted: function () {
+				let now = new Date()
+				this.selectDate = [now.getFullYear(), ((now.getMonth() + 1) + '').padStart(2, '0'), (now.getDate() + '').padStart(2, '0')].join('-')
+			},
+
+			methods: {
+				queryStatus() {
+					$http.get(`/v1/machine/${this.mid}`).then(res => {
+						Object.assign(this.vo, { name: res.name })
+						this.vo.sysInfo = JSON.parse(res.sys_info) || {}
+					})
+					$http.post('/v1/machine/queryStatus', { mid: this.mid, selectDate: this.selectDate }).then(res => {
+						Object.assign(this.vo, res)
+						this.vo.status = res.status ? getBitArrary(res.status) : null
+					})
+				},
+				hasBit(row, col) {
+					let index = row * 60 + col
+					return this.vo.status?.length >= index ? this.vo.status.charAt(index) == '1' : false
+				}
+			}
+			, watch: {
+				//监控日期变化
+				selectDate: function (newData, oldData) {
+					this.queryStatus()
+				}
+			}
+
+		}).mount('#app');
+
+	</script>
+
+
+</body>
+
+</html>
